@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+.vs/
+*.DotSettings.user
+appsettings.Development.json
+
+# Node / React
+node_modules/
+northwind-client/dist/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Misc
+*.log
