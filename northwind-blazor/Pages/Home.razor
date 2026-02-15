@@ -1,0 +1,41 @@
+@*
+    HOME PAGE — Blazor Concept: NavigationManager + OnInitializedAsync Lifecycle
+
+    React equivalent: Navigate component — <Navigate to="/basic-queries" replace />
+    Angular equivalent: Router redirect — { path: '', redirectTo: '/basic-queries' }
+
+    Key Blazor concepts:
+    1. @page "/" — Route directive, registers this component for the root URL
+       React:  <Route path="/" element={<Navigate to="/basic-queries" />} />
+       Angular: { path: '', redirectTo: '/basic-queries', pathMatch: 'full' }
+
+    2. @inject NavigationManager Nav — DI for navigation service
+       React:  const navigate = useNavigate()
+       Angular: private router = inject(Router)
+
+    3. OnInitializedAsync() — Lifecycle method, runs when component initializes
+       React:  useEffect(() => { navigate('/basic-queries') }, [])
+       Angular: ngOnInit() { this.router.navigate(['/basic-queries']) }
+
+       Blazor lifecycle methods:
+       - OnInitialized() / OnInitializedAsync() — runs once on first render
+       - OnParametersSet() / OnParametersSetAsync() — runs when params change
+       - OnAfterRender() / OnAfterRenderAsync() — runs after DOM update
+
+    4. Nav.NavigateTo() — Programmatic navigation
+       Blazor:  Nav.NavigateTo("/basic-queries")
+       React:   navigate('/basic-queries')
+       Angular: this.router.navigate(['/basic-queries'])
+*@
+@page "/"
+@inject NavigationManager Nav
+
+@code {
+    // OnInitializedAsync — lifecycle hook that runs when the component first loads
+    // This is the most common lifecycle method (like React's useEffect with empty deps)
+    protected override void OnInitialized()
+    {
+        // Redirect to the first demo page
+        Nav.NavigateTo("/basic-queries");
+    }
+}

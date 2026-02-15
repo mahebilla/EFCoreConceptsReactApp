@@ -28,12 +28,12 @@ builder.Services.AddDbContext<NorthwindLazyContext>(options =>
     options.UseLazyLoadingProxies()
            .UseSqlServer(connectionString));
 
-// CORS for React dev server
+// CORS for frontend dev servers (React :5173, Blazor WASM :5200)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5200")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

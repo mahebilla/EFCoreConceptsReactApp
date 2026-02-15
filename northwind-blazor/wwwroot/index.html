@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EF Core Concepts — Blazor</title>
+    <base href="/" />
+    <!--
+        Blazor Concept: Static File Hosting (wwwroot/)
+
+        React equivalent: public/index.html (Vite serves from public/)
+        Angular equivalent: src/index.html
+
+        In Blazor WASM, wwwroot/ is the static root. This HTML file loads the
+        Blazor WebAssembly runtime, which then boots C# in the browser.
+        The #app div is where Blazor renders the root component (App.razor).
+    -->
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="NorthwindBlazor.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">&#x1f5d9;</a>
+    </div>
+    <!-- This script boots the .NET WebAssembly runtime in the browser -->
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

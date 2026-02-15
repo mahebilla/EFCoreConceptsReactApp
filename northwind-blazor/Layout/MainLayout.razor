@@ -1,0 +1,35 @@
+@*
+    MAINLAYOUT — Blazor Concept: LayoutComponentBase + @Body (RenderFragment)
+
+    React equivalent: MainLayout.tsx with {children}
+    Angular equivalent: main-layout.component.ts with <ng-content>
+
+    Key Blazor concepts:
+    1. @inherits LayoutComponentBase — Makes this a layout component
+       This base class provides the @Body property (a RenderFragment).
+       Blazor renders the matched page component in place of @Body.
+
+       React equivalent:  function Layout({ children }) { return <div>{children}</div> }
+       Angular equivalent: <ng-content /> (content projection)
+
+    2. @Body — RenderFragment (Blazor's {children})
+       RenderFragment is Blazor's type for "renderable content" — like React.ReactNode.
+       The Router (in App.razor) renders page components into @Body.
+
+       Blazor:  @Body
+       React:   {children}
+       Angular: <ng-content />
+
+    3. Layout is set in App.razor via DefaultLayout="@typeof(MainLayout)"
+       React:   <Route element={<MainLayout />}> wraps child routes
+       Angular: AppComponent template includes <router-outlet>
+*@
+@inherits LayoutComponentBase
+
+<div class="layout">
+    <NavMenu />
+    <main class="main-content">
+        @* @Body renders the current page component — like React's {children} *@
+        @Body
+    </main>
+</div>

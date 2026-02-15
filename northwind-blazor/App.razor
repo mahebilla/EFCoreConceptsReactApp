@@ -1,0 +1,46 @@
+@*
+    APP.RAZOR — Blazor Concept: Router Component (Application Root)
+
+    React equivalent: App.tsx with <BrowserRouter> + <Routes> + <Route>
+    Angular equivalent: app.routes.ts (route definitions) + RouterOutlet
+
+    Key Blazor concepts:
+    1. <Router> — Blazor's client-side router
+       Scans the assembly for @page directives and builds a route table.
+       React uses <BrowserRouter> + <Route path="...">;
+       Angular uses provideRouter(routes) + <router-outlet>.
+
+    2. AppAssembly — Tells the router which assembly to scan for @page routes
+       @typeof(App).Assembly = "scan this project for routable components"
+       React: You define routes explicitly in App.tsx
+       Angular: You define routes in app.routes.ts
+
+    3. <Found> / <NotFound> — Route match handling
+       <Found> renders when a route matches (shows the page in a layout)
+       <NotFound> renders when no @page directive matches the URL
+       React equivalent: <Route path="*" element={<NotFound />} />
+
+    4. DefaultLayout — Wraps all pages in MainLayout
+       React equivalent: <Route element={<MainLayout />}> as a parent route
+       Angular equivalent: AppComponent template with <router-outlet>
+
+    5. RouteView — Renders the matched page component
+       RouteData carries the matched component + parameters
+       React equivalent: The element prop on <Route> renders the component
+
+    NOTE: Unlike React/Angular where you define routes in a central file,
+    Blazor discovers routes automatically from @page directives in .razor files.
+    No route registration needed — just add @page "/path" to any component!
+*@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p role="alert">Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

@@ -1,0 +1,59 @@
+@page "/stored-procedures"
+
+<DemoSection
+    Title="Stored Procedures"
+    Subtitle="Demonstrates calling Northwind stored procedures via SqlQueryRaw<T>."
+    Demos="demos" />
+
+@code {
+    private List<EndpointDemo> demos = new()
+    {
+        new("CustOrderHist (Customer Order History)", "/api/storedprocedures/custorderhistory?customerId=ALFKI", "GET",
+            @"// DTO to map the stored procedure result set
+public class CustOrderHistResult
+{
+    public string ProductName { get; set; } = """";
+    public int Total { get; set; }
+}
+
+[HttpGet(""custorderhistory"")]
+public async Task<IActionResult> GetCustOrderHistory(string customerId)
+{
+    var param = new SqlParameter(""@CustomerID"", customerId);
+
+    var results = await _context.Database
+        .SqlQueryRaw<CustOrderHistResult>(""EXEC CustOrderHist @CustomerID"", param)
+        .ToListAsync();
+
+    return Ok(new {
+        method = ""SqlQueryRaw<T> — EXEC CustOrderHist"",
+        description = $""Order history for customer '{customerId}' — {results.Count} products ordered"",
+        data = results
+    });
+}",
+            "Calls the Northwind CustOrderHist stored procedure via SqlQueryRaw<T> with a parameterized @CustomerID."),
+
+        new("Ten Most Expensive Products", "/api/storedprocedures/tenmostexpensive", "GET",
+            @"// DTO for the result set
+public class TenMostExpensiveResult
+{
+    public string TenMostExpensiveProducts { get; set; } = """";
+    public decimal UnitPrice { get; set; }
+}
+
+[HttpGet(""tenmostexpensive"")]
+public async Task<IActionResult> GetTenMostExpensive()
+{
+    var results = await _context.Database
+        .SqlQueryRaw<TenMostExpensiveResult>(""EXEC [Ten Most Expensive Products]"")
+        .ToListAsync();
+
+    return Ok(new {
+        method = ""SqlQueryRaw<T> — EXEC [Ten Most Expensive Products]"",
+        description = ""Top 10 products by unit price from built-in Northwind stored procedure"",
+        data = results
+    });
+}",
+            "Calls the Northwind 'Ten Most Expensive Products' stored procedure — no parameters needed."),
+    };
+}

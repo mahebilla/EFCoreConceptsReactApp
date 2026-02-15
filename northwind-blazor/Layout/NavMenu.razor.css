@@ -1,0 +1,77 @@
+/*
+ * CSS Isolation for NavMenu — Dark sidebar theme
+ *
+ * Blazor Concept: ::deep selector for child element styling
+ * The "active" class is auto-added by NavLink when the route matches.
+ * We style it here using ::deep because NavLink renders its own elements.
+ */
+.sidebar {
+    width: 280px;
+    min-width: 280px;
+    background-color: #1a1a2e;
+    color: #eee;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.sidebar-header {
+    margin-bottom: 24px;
+}
+
+.sidebar-header h2 {
+    color: #fff;
+    font-size: 18px;
+    margin: 0;
+}
+
+.sidebar-subtitle {
+    color: #888;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* NavLink items — Blazor's NavLink renders as <a> tags */
+::deep .nav-item {
+    display: block;
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    color: #aaa;
+    background-color: transparent;
+    border-radius: 6px;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease;
+}
+
+::deep .nav-item:hover {
+    color: #ddd;
+    background-color: rgba(255, 255, 255, 0.05);
+    text-decoration: none;
+}
+
+/* "active" class is auto-added by Blazor's NavLink component */
+/* React equivalent: NavLink's isActive callback for conditional styling */
+/* Angular equivalent: routerLinkActive="active" directive */
+::deep .nav-item.active {
+    color: #fff;
+    background-color: #16213e;
+    border-left: 3px solid #0066cc;
+}
+
+::deep .nav-label {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+::deep .nav-desc {
+    font-size: 10px;
+    color: #777;
+    margin-top: 2px;
+}
+
+::deep .nav-item.active .nav-desc {
+    color: #999;
+}

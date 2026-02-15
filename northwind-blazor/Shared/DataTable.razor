@@ -1,0 +1,85 @@
+@*
+    DATATABLE COMPONENT — Blazor Concept: @foreach List Rendering + JsonElement
+
+    React equivalent: data.map((row, i) => <tr key={i}>...</tr>)
+    Angular equivalent: @for (let row of data; track $index) { <tr>...</tr> }
+
+    Key Blazor concepts:
+    1. @foreach — Iterates over collections to render repeated elements
+       Blazor:  @foreach (var row in Rows) { <tr>...</tr> }
+       React:   {rows.map(row => <tr>...</tr>)}
+       Angular: @for (let row of rows) { <tr>...</tr> }
+       Note: Blazor doesn't need "key" like React — it tracks by reference.
+
+    2. JsonElement — Dynamic JSON handling
+       The API returns different shapes for different endpoints.
+       Rather than 50+ C# DTO classes, we use System.Text.Json.JsonElement
+       to dynamically inspect JSON properties at runtime.
+       React/JS equivalent: Just accessing object properties (JS is dynamic)
+
+    3. GetProperty() / EnumerateObject() — JsonElement navigation
+       Since C# is strongly typed, we use these methods to read JSON dynamically.
+       In JavaScript, you'd just do: row["columnName"] or Object.keys(row)
+*@
+@using System.Text.Json
+
+<div class="data-table-wrapper">
+    @if (Rows == null || Rows.Count == 0)
+    {
+        <p class="no-data">No data returned.</p>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        @* Extract column names from the first row's JSON properties *@
+                        @foreach (var prop in Rows[0].EnumerateObject())
+                        {
+                            <th>@prop.Name</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Rows)
+                    {
+                        <tr>
+                            @foreach (var prop in row.EnumerateObject())
+                            {
+                                <td>@FormatValue(prop.Value)</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="row-count">@Rows.Count row@(Rows.Count != 1 ? "s" : "")</div>
+    }
+</div>
+
+@code {
+    // [Parameter] — Parent passes data as List<JsonElement>
+    // React equivalent: data: Record<string, unknown>[] prop
+    [Parameter] public List<JsonElement> Rows { get; set; } = new();
+
+    /// <summary>
+    /// Formats a JsonElement value for display.
+    /// In JavaScript this is trivial (String(val)), but C# needs explicit handling
+    /// because JsonElement wraps typed JSON values (string, number, bool, null, etc.)
+    /// </summary>
+    private string FormatValue(JsonElement value)
+    {
+        // C# switch expression — compact pattern matching
+        // Like a JavaScript switch but returns a value
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? "",
+            JsonValueKind.Number => value.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => "",
+            _ => value.GetRawText()
+        };
+    }
+}

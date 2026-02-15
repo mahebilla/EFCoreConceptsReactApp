@@ -1,0 +1,224 @@
+@*
+    DEMOSECTION COMPONENT — Blazor Concept: State Management + Event Handling + DI
+
+    React equivalent: DemoSection.tsx (uses useState, onClick, axios)
+    Angular equivalent: demo-section.component.ts (uses signal(), (click), HttpClient)
+
+    This is the CORE component that drives every page. Key Blazor concepts:
+
+    1. @inject — Dependency Injection into components
+       Blazor:  @inject ApiService Api
+       React:   import axios from 'axios' (no DI, just imports)
+       Angular: private api = inject(ApiService)
+
+    2. Private fields for state — replaces React's useState / Angular's signal()
+       Blazor:  private Dictionary<string, JsonElement?> results = new();
+       React:   const [results, setResults] = useState({})
+       Angular: results = signal({})
+       In Blazor, mutating a field + calling StateHasChanged() triggers re-render.
+
+    3. @onclick — Event binding
+       Blazor:  <button @onclick="() => RunDemo(demo)">Run</button>
+       React:   <button onClick={() => runDemo(demo)}>Run</button>
+       Angular: <button (click)="runDemo(demo)">Run</button>
+
+    4. StateHasChanged() — Triggers UI re-render
+       Blazor:  StateHasChanged() — explicit call (automatic after event handlers)
+       React:   setState() / set function from useState — triggers re-render
+       Angular: Signals auto-notify; or ChangeDetectorRef.markForCheck()
+       After async operations, Blazor auto-calls StateHasChanged().
+
+    5. @if / @else — Conditional rendering
+       Blazor:  @if (loading[demo.Name]) { <span>Loading...</span> }
+       React:   {loading[demo.name] ? <span>Loading...</span> : ...}
+       Angular: @if (loading()) { <span>Loading...</span> }
+
+    6. @foreach — List rendering (iterates the demos list)
+       Blazor:  @foreach (var demo in Demos) { ... }
+       React:   {demos.map(demo => ...)}
+       Angular: @for (let demo of demos; track demo.name) { ... }
+*@
+@using System.Text.Json
+@inject ApiService Api
+
+<div>
+    <h1>@Title</h1>
+    <p style="color: #666; margin-bottom: 20px;">@Subtitle</p>
+
+    @foreach (var demo in Demos)
+    {
+        <div class="demo-card">
+            <div class="demo-header">
+                <div>
+                    <h3>@demo.Name</h3>
+                    <p class="demo-description">@demo.Description</p>
+                </div>
+                <span class="method-badge @GetMethodClass(demo.Method)">
+                    @demo.Method
+                </span>
+            </div>
+
+            <CodeSnippet Code="@demo.Code" Title="C# Backend Code" />
+
+            @* @onclick binds a C# method to the click event *@
+            @* The lambda () => RunDemo(demo) captures the current demo variable *@
+            @* React equivalent: onClick={() => runDemo(demo)} *@
+            <button class="run-button @(IsLoading(demo.Name) ? "disabled" : "")"
+                    @onclick="() => RunDemo(demo)"
+                    disabled="@IsLoading(demo.Name)">
+                @if (IsLoading(demo.Name))
+                {
+                    <span>Loading...</span>
+                }
+                else
+                {
+                    <span>Run @demo.Method Request</span>
+                }
+            </button>
+
+            @* Conditional rendering — only show results if we have data *@
+            @if (HasResult(demo.Name))
+            {
+                <div class="result-section">
+                    @{
+                        var result = GetResult(demo.Name);
+                    }
+                    @if (IsError(demo.Name))
+                    {
+                        <div class="error-message">Error: @GetError(demo.Name)</div>
+                    }
+                    else if (result != null)
+                    {
+                        @* Display method + description from API response *@
+                        @if (TryGetStringProperty(result.Value, "method", out var method))
+                        {
+                            <div class="result-method">Method: @method</div>
+                        }
+                        @if (TryGetStringProperty(result.Value, "description", out var desc))
+                        {
+                            <div class="result-description">@desc</div>
+                        }
+
+                        @* Render as DataTable if "data" is an array, else as JSON *@
+                        @if (TryGetArrayData(result.Value, out var arrayData))
+                        {
+                            <DataTable Rows="arrayData" />
+                        }
+                        else
+                        {
+                            <pre class="json-output">@FormatJson(result.Value)</pre>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    // [Parameter] — Properties set by parent component (like React props)
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public List<EndpointDemo> Demos { get; set; } = new();
+
+    // Private state — Blazor uses regular C# fields instead of useState/signal
+    // When these change + StateHasChanged() is called, the component re-renders
+    // React equivalent: const [results, setResults] = useState<Record<string, any>>({})
+    private Dictionary<string, JsonElement?> results = new();
+    private Dictionary<string, bool> loading = new();
+    private Dictionary<string, string?> errors = new();
+
+    /// <summary>
+    /// Runs a demo by calling the API endpoint.
+    /// async Task method — Blazor's equivalent of React's async function.
+    /// After this method completes, Blazor auto-calls StateHasChanged().
+    /// </summary>
+    private async Task RunDemo(EndpointDemo demo)
+    {
+        loading[demo.Name] = true;
+        errors[demo.Name] = null;
+        // StateHasChanged() is called automatically after event handlers,
+        // but we call it explicitly here to update UI BEFORE the await
+        StateHasChanged();
+
+        try
+        {
+            // Call our injected ApiService — similar to React's axios call
+            var result = await Api.RequestAsync(demo.Method, demo.Endpoint, demo.Body);
+            results[demo.Name] = result;
+        }
+        catch (Exception ex)
+        {
+            errors[demo.Name] = ex.Message;
+            results[demo.Name] = null;
+        }
+
+        loading[demo.Name] = false;
+        // StateHasChanged() is auto-called after the event handler completes
+    }
+
+    // Helper methods for state checks (Blazor doesn't have computed properties like Angular)
+    private bool IsLoading(string name) => loading.ContainsKey(name) && loading[name];
+    private bool HasResult(string name) => results.ContainsKey(name) || errors.ContainsKey(name) && errors[name] != null;
+    private bool IsError(string name) => errors.ContainsKey(name) && errors[name] != null;
+    private string GetError(string name) => errors.ContainsKey(name) ? errors[name] ?? "" : "";
+    private JsonElement? GetResult(string name) => results.ContainsKey(name) ? results[name] : null;
+
+    private string GetMethodClass(string method) => method.ToUpper() switch
+    {
+        "GET" => "method-get",
+        "POST" => "method-post",
+        "PUT" => "method-put",
+        "DELETE" => "method-delete",
+        _ => "method-get"
+    };
+
+    /// <summary>
+    /// Tries to get a string property from a JsonElement.
+    /// In JavaScript, you'd just do: result.method ?? result.Method
+    /// In C#, JsonElement requires explicit property access with error handling.
+    /// </summary>
+    private bool TryGetStringProperty(JsonElement element, string name, out string value)
+    {
+        value = "";
+        // Try lowercase first, then PascalCase (API returns PascalCase)
+        if (element.TryGetProperty(name, out var prop) || element.TryGetProperty(Capitalize(name), out prop))
+        {
+            if (prop.ValueKind == JsonValueKind.String)
+            {
+                value = prop.GetString() ?? "";
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to extract the "data" array from the API response.
+    /// API returns: { method: "...", description: "...", data: [...] }
+    /// If "data" is an array, we render it as a DataTable.
+    /// </summary>
+    private bool TryGetArrayData(JsonElement element, out List<JsonElement> data)
+    {
+        data = new();
+        if (element.TryGetProperty("data", out var dataProp) || element.TryGetProperty("Data", out dataProp))
+        {
+            if (dataProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in dataProp.EnumerateArray())
+                {
+                    data.Add(item);
+                }
+                return data.Count > 0;
+            }
+        }
+        return false;
+    }
+
+    private string FormatJson(JsonElement element)
+    {
+        return JsonSerializer.Serialize(element, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private string Capitalize(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s[1..];
+}

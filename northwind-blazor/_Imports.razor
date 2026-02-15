@@ -1,0 +1,24 @@
+@*
+    _IMPORTS.RAZOR — Blazor Concept: Global Using Directives
+
+    React equivalent: No direct equivalent — each file imports what it needs.
+    Angular equivalent: No direct equivalent (standalone components import dependencies).
+
+    This file adds @using directives to ALL .razor files in the project.
+    Without it, you'd need @using lines at the top of every component.
+    Think of it as a project-wide "import * from" statement.
+*@
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using Microsoft.JSInterop
+@using NorthwindBlazor
+@using NorthwindBlazor.Layout
+@using NorthwindBlazor.Shared
+@using NorthwindBlazor.Models
+@using NorthwindBlazor.Services

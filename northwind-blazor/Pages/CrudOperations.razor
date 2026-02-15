@@ -1,0 +1,116 @@
+@page "/crud-operations"
+
+<DemoSection
+    Title="CRUD Operations"
+    Subtitle="Demonstrates Add, AddRange, Update, Remove, and Attach with EntityState. Changes are persisted to the database."
+    Demos="demos" />
+
+@code {
+    private List<EndpointDemo> demos = new()
+    {
+        new("Add (Single Entity)", "/api/crudoperations/add", "POST",
+            @"// POST /api/crudoperations/add
+var product = new Product
+{
+    ProductName = dto.ProductName,
+    UnitPrice = dto.UnitPrice,
+    Discontinued = false
+};
+
+_context.Products.Add(product);
+await _context.SaveChangesAsync();
+
+// After SaveChanges, product.ProductId is set
+// by the database (identity column).",
+            "Insert a new product using DbSet.Add and SaveChangesAsync",
+            new { productName = "Demo Product", unitPrice = 15.99 }),
+
+        new("AddRange (Batch Insert)", "/api/crudoperations/addrange", "POST",
+            @"// POST /api/crudoperations/addrange
+var products = new List<Product>
+{
+    new Product { ProductName = ""Batch Item 1"", UnitPrice = 10.00m },
+    new Product { ProductName = ""Batch Item 2"", UnitPrice = 20.00m },
+    new Product { ProductName = ""Batch Item 3"", UnitPrice = 30.00m }
+};
+
+_context.Products.AddRange(products);
+await _context.SaveChangesAsync();
+
+// AddRange is more efficient than calling Add in a loop.",
+            "Insert multiple products at once using AddRange"),
+
+        new("Update (Tracked Entity)", "/api/crudoperations/update/1", "PUT",
+            @"// PUT /api/crudoperations/update/{id}
+var product = await _context.Products.FindAsync(id);
+if (product == null) return NotFound();
+
+product.ProductName = product.ProductName + "" (Updated)"";
+product.UnitPrice = (product.UnitPrice ?? 0) + 1.00m;
+
+// No need to call Update() — the change tracker
+// detects modifications automatically.
+await _context.SaveChangesAsync();",
+            "Fetch an entity, modify it, and let the change tracker detect the update"),
+
+        new("DbSet.Update (Disconnected)", "/api/crudoperations/update-method", "PUT",
+            @"// PUT /api/crudoperations/update-method
+var product = new Product
+{
+    ProductId = dto.ProductId,
+    ProductName = dto.ProductName,
+    UnitPrice = dto.UnitPrice
+};
+
+_context.Products.Update(product);
+await _context.SaveChangesAsync();
+
+// Update() marks ALL properties as Modified.
+// Use this for disconnected scenarios (e.g., API payloads).",
+            "Attach a disconnected entity and mark it as Modified using DbSet.Update()"),
+
+        new("Remove", "/api/crudoperations/remove/999", "DELETE",
+            @"// DELETE /api/crudoperations/remove/{id}
+var product = await _context.Products.FindAsync(id);
+if (product == null) return NotFound();
+
+_context.Products.Remove(product);
+await _context.SaveChangesAsync();
+
+// Remove marks the entity as Deleted.
+// SaveChanges issues a DELETE SQL statement.",
+            "Delete a product by ID (uses a high ID to avoid removing real data)"),
+
+        new("Attach + EntityState", "/api/crudoperations/attach", "POST",
+            @"// POST /api/crudoperations/attach
+var product = new Product
+{
+    ProductId = dto.ProductId,
+    ProductName = dto.ProductName,
+    UnitPrice = dto.UnitPrice
+};
+
+_context.Attach(product);
+_context.Entry(product).State = EntityState.Modified;
+
+await _context.SaveChangesAsync();
+
+// Attach starts tracking as Unchanged.
+// Setting State = Modified forces an UPDATE.",
+            "Attach a disconnected entity and explicitly set its EntityState"),
+
+        new("List Products (Verify)", "/api/crudoperations/products", "GET",
+            @"// GET /api/crudoperations/products
+var products = await _context.Products
+    .OrderByDescending(p => p.ProductId)
+    .Take(20)
+    .Select(p => new {
+        p.ProductId,
+        p.ProductName,
+        p.UnitPrice,
+        p.Discontinued
+    })
+    .ToListAsync();",
+            "List all products to verify CRUD operations"),
+    };
+}

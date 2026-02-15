@@ -1,0 +1,69 @@
+@*
+    NAVMENU — Blazor Concept: NavLink Component + @foreach + Navigation
+
+    React equivalent: Sidebar.tsx with NavLink from react-router-dom
+    Angular equivalent: sidebar.component.ts with routerLink + routerLinkActive
+
+    Key Blazor concepts:
+    1. NavLink — Blazor's built-in navigation link component
+       Automatically adds "active" CSS class when the route matches.
+       React equivalent:  <NavLink to="/path"> (from react-router-dom)
+       Angular equivalent: <a routerLink="/path" routerLinkActive="active">
+
+    2. NavLinkMatch.All — Exact route matching
+       NavLinkMatch.All = only "active" when URL exactly matches href
+       NavLinkMatch.Prefix = "active" when URL starts with href
+       React equivalent:  end prop on NavLink → <NavLink to="/path" end>
+       Angular equivalent: [routerLinkActiveOptions]="{ exact: true }"
+
+    3. @foreach — Iterates the navItems list to render navigation links
+       Blazor:  @foreach (var item in navItems) { <NavLink>...</NavLink> }
+       React:   {navItems.map(item => <NavLink key={item.path}>...</NavLink>)}
+       Angular: @for (let item of navItems; track item.path) { <a>...</a> }
+
+    4. Records as data structures — NavItem record for type-safe nav data
+       In React, you'd use a plain object: { path: '/basic-queries', label: '...' }
+       In Blazor, records give you type safety + immutability.
+*@
+
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <h2>EF Core Methods</h2>
+        <p class="sidebar-subtitle">Northwind Database Demo</p>
+    </div>
+
+    @foreach (var item in navItems)
+    {
+        @* NavLink auto-applies "active" class when route matches *@
+        @* React equivalent: <NavLink to={item.path} style={({isActive}) => ...}> *@
+        <NavLink class="nav-item" href="@item.Path" Match="NavLinkMatch.All">
+            <div class="nav-label">@item.Label</div>
+            <div class="nav-desc">@item.Desc</div>
+        </NavLink>
+    }
+</nav>
+
+@code {
+    // C# record — immutable data type with auto-generated constructor
+    // React/JS equivalent: const navItems = [{ path: '...', label: '...' }]
+    // Records are value types with built-in equality — ideal for data carriers
+    private record NavItem(string Path, string Label, string Desc);
+
+    // List initializer — populates the sidebar navigation
+    // Same data as React's navItems array and Angular's navItems array
+    private readonly List<NavItem> navItems = new()
+    {
+        new("/basic-queries", "Basic Queries", "Where, Find, First, Count, Aggregates, GroupBy, Join"),
+        new("/raw-sql", "Raw SQL", "FromSql, FromSqlRaw, SqlQuery, ExecuteSql"),
+        new("/related-data", "Related Data", "Include, ThenInclude, Explicit, Lazy Loading"),
+        new("/tracking", "Tracking", "AsNoTracking, IdentityResolution, Comparison"),
+        new("/crud-operations", "CRUD Operations", "Add, Update, Remove, Attach, SaveChanges"),
+        new("/bulk-operations", "Bulk Operations", "ExecuteUpdate, ExecuteDelete"),
+        new("/transactions", "Transactions", "BeginTransaction, Savepoints, Rollback"),
+        new("/compiled-queries", "Compiled Queries", "CompileQuery, CompileAsyncQuery"),
+        new("/global-filters", "Global Filters", "HasQueryFilter, IgnoreQueryFilters"),
+        new("/change-tracker", "Change Tracker", "Entries, EntityState, OriginalValues"),
+        new("/stored-procedures", "Stored Procedures", "FromSqlRaw with SPs"),
+        new("/pagination", "Pagination", "Skip/Take, Keyset pagination"),
+    };
+}

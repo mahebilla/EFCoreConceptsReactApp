@@ -1,0 +1,37 @@
+@*
+    CODESNIPPET COMPONENT — Blazor Concept: [Parameter] Properties
+
+    React equivalent: <CodeSnippet code={code} title="C# Code" />
+    Angular equivalent: <app-code-snippet [code]="code" [title]="'C# Code'" />
+
+    Key Blazor concepts:
+    1. [Parameter] — Like React props or Angular @Input()
+       Blazor: [Parameter] public string Code { get; set; }
+       React:  function CodeSnippet({ code }: Props)
+       Angular: @Input() code: string;
+
+    2. @if — Conditional rendering
+       Blazor: @if (Title != null) { <div>@Title</div> }
+       React:  {title && <div>{title}</div>}
+       Angular: @if (title) { <div>{{title}}</div> }
+
+    3. @ prefix renders C# expressions in HTML (Razor syntax)
+       Blazor: <code>@Code</code>
+       React:  <code>{code}</code>
+       Angular: <code>{{code}}</code>
+*@
+<div class="code-snippet">
+    @if (Title != null)
+    {
+        <div class="code-title">@Title</div>
+    }
+    <pre class="code-block"><code>@Code</code></pre>
+</div>
+
+@code {
+    // [Parameter] makes these properties settable from parent components
+    // React equivalent: destructuring props — { code, title }
+    // Angular equivalent: @Input() decorator
+    [Parameter] public string Code { get; set; } = "";
+    [Parameter] public string? Title { get; set; }
+}
