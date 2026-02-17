@@ -1,6 +1,7 @@
 # .NET
 bin/
 obj/
+publish/
 *.user
 *.suo
 *.vs/
@@ -11,6 +12,15 @@ appsettings.Development.json
 # Node / React
 node_modules/
 northwind-client/dist/
+northwind-angular/dist/
+northwind-angular/.angular/
+
+# Azure deployment
+deploy.zip
+*.zip
+
+# Claude Code
+.claude/
 
 # IDE
 .idea/
@@ -19,6 +29,7 @@ northwind-client/dist/
 # OS
 Thumbs.db
 .DS_Store
+nul
 
 # Misc
 *.log
