@@ -52,17 +52,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Serve React build output from ../northwind-client/dist as static files
+// Serve React build output as static files
+// In dev: from ../northwind-client/dist (Vite output)
+// In production (Azure): from wwwroot/ (copied by PublishReactApp MSBuild target)
 var spaPath = Path.Combine(app.Environment.ContentRootPath, "..", "northwind-client", "dist");
-if (Directory.Exists(spaPath))
+var spaProvider = Directory.Exists(spaPath)
+    ? new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.GetFullPath(spaPath))
+    : app.Environment.WebRootFileProvider;
+
+app.UseStaticFiles(new StaticFileOptions
 {
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-            Path.GetFullPath(spaPath)),
-        RequestPath = ""
-    });
-}
+    FileProvider = spaProvider,
+    RequestPath = ""
+});
 
 app.UseRouting();
 app.UseAuthorization();
@@ -72,9 +74,7 @@ app.MapControllers();
 // SPA fallback — serve index.html for non-API routes (client-side routing)
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {
-    FileProvider = Directory.Exists(spaPath)
-        ? new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Path.GetFullPath(spaPath))
-        : app.Environment.WebRootFileProvider
+    FileProvider = spaProvider
 });
 
 app.Run();

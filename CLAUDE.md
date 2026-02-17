@@ -8,7 +8,8 @@ Full-stack **EF Core learning app** using the Northwind database. Each EF Core c
 - **Frontend (React)**: React 19 + TypeScript + Vite 7 + React Router 7 → `northwind-client/`
 - **Frontend (Angular)**: Angular 19 + TypeScript + Standalone Components + Signals → `northwind-angular/`
 - **Frontend (Blazor)**: Blazor WebAssembly .NET 8 + Razor Components + CSS Isolation → `northwind-blazor/`
-- **Database**: Northwind on SQL Server Express (trusted connection)
+- **Database**: Northwind on SQL Server Express (local dev) / Azure SQL Free tier (production)
+- **Azure Deployment**: App Service F1 (Free) + Azure SQL Serverless (Free offer)
 
 ## Folder Structure
 
@@ -129,7 +130,7 @@ The `EndpointDemo` interface drives all pages:
 | StoredProceduresController  | /api/storedprocedures        | StoredProcedures.tsx | stored-procedures.component.ts| StoredProcedures.razor   | FromSqlRaw with stored procs     |
 | PaginationController        | /api/pagination              | Pagination.tsx       | pagination.component.ts       | Pagination.razor         | Skip/Take, Keyset pagination     |
 
-## Dev Setup
+## Dev Setup (Local)
 
 - **API port**: `http://localhost:5009`
 - **React client**: `http://localhost:5173` (Vite proxy → API)
@@ -138,6 +139,60 @@ The `EndpointDemo` interface drives all pages:
 - **CORS**: Enabled in dev for `http://localhost:5173` and `http://localhost:5200`
 - **DB connection**: `Server=.\SQLEXPRESS;Database=Northwind;Trusted_Connection=True;TrustServerCertificate=True;`
 - **All three frontends** run independently — just pick one and start it alongside the API
+
+## Azure Deployment (Production)
+
+### Architecture
+```
+[Azure App Service F1 Free]  ←→  [Azure SQL Free Serverless]
+  NorthwindApi + React SPA          Northwind DB
+  (Linux, .NET 8)                   (Gen5, auto-pause)
+```
+
+### Azure Resources
+| Resource | Name | SKU | Cost |
+|----------|------|-----|------|
+| Resource Group | `rg-efcore-app` (East Asia) | — | — |
+| SQL Server | `efcore-nw-sql-mahi` | — | $0 |
+| SQL Database | `Northwind` | Free serverless (100K vCore sec/mo, 32GB) | $0 |
+| App Service Plan | `plan-efcore-app` | F1 Free (Linux) | $0 |
+| Web App | `efcore-northwind-app-mahi` | .NET 8 | $0 |
+
+### Production URL
+- **Live app**: `https://efcore-northwind-app-mahi.azurewebsites.net`
+- First load is slow (~10-30s) — free tier cold start + SQL auto-pause wake-up
+
+### How Production Differs from Dev
+- **SPA serving**: In dev, React is served from `../northwind-client/dist` via Vite. In production, `dotnet publish` copies React build to `wwwroot/` (via `PublishReactApp` MSBuild target in `.csproj`), and `Program.cs` falls back to `WebRootFileProvider`
+- **Connection string**: Azure App Service overrides `ConnectionStrings:NorthwindConnection` via environment variable (set with `az webapp config connection-string set`). No changes to `appsettings.json` needed
+- **CORS**: Not needed in production — React SPA and API are served from the same origin
+- **Swagger**: Only enabled in Development environment (already configured)
+
+### Deploy Commands
+```bash
+# Build (from project root)
+cd NorthwindApi
+dotnet publish -c Release -o ./publish
+
+# Zip and deploy
+cd publish
+tar -acf ../deploy.zip *
+cd ..
+az webapp deployment source config-zip \
+  --name efcore-northwind-app-mahi \
+  --resource-group rg-efcore-app \
+  --src deploy.zip
+```
+
+### Free Tier Limits
+- **App Service F1**: 60 min CPU/day, 1GB RAM, 165 MiB data out/day, sleeps after ~20 min idle
+- **Azure SQL Free**: 100K vCore seconds/month, 32GB storage, auto-pauses after 1 hour idle
+- Monitor usage: Azure Portal → App Services → Quotas / SQL databases → Overview
+
+### Cleanup (delete everything)
+```bash
+az group delete --name rg-efcore-app --yes --no-wait
+```
 
 ## Build & Run
 
@@ -186,7 +241,7 @@ cd northwind-blazor && dotnet run
 - `JsonIgnoreCondition.WhenWritingNull` keeps responses clean
 - Two DbContexts registered: standard + lazy-loading (for RelatedData demos)
 - Many controllers use `.IgnoreQueryFilters()` because `GlobalFiltersController` sets a global filter on Products
-- The React SPA is served as static files in production via SPA fallback in `Program.cs`
+- The React SPA is served as static files via SPA fallback in `Program.cs` (dev: `../northwind-client/dist`, production: `wwwroot/`)
 - Inline styles used throughout React; Angular sidebar uses component-scoped CSS
 - All Angular source code has inline comments explaining concepts with React comparisons
 - All Blazor source code has inline comments explaining concepts with React comparisons
