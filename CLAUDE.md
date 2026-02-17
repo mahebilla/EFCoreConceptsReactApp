@@ -10,10 +10,14 @@ Full-stack **EF Core learning app** using the Northwind database. Each EF Core c
 - **Frontend (Blazor)**: Blazor WebAssembly .NET 8 + Razor Components + CSS Isolation → `northwind-blazor/`
 - **Database**: Northwind on SQL Server Express (local dev) / Azure SQL Free tier (production)
 - **Azure Deployment**: App Service F1 (Free) + Azure SQL Serverless (Free offer)
+- **CI/CD**: GitHub Actions → auto-deploy to Azure on PR merge to `main`
 
 ## Folder Structure
 
 ```
+.github/workflows/
+  deploy.yml                → GitHub Actions CI/CD (auto-deploy to Azure on PR merge)
+
 NorthwindApi/               → .NET 8 Web API
   Program.cs                → Entry point, DI, middleware, CORS, SPA fallback
   Models/                   → EF Core entity classes (27 files, tables + views)
@@ -168,7 +172,7 @@ The `EndpointDemo` interface drives all pages:
 - **CORS**: Not needed in production — React SPA and API are served from the same origin
 - **Swagger**: Only enabled in Development environment (already configured)
 
-### Deploy Commands
+### Manual Deploy Commands (if needed)
 ```bash
 # Build (from project root)
 cd NorthwindApi
@@ -183,6 +187,67 @@ az webapp deployment source config-zip \
   --resource-group rg-efcore-app \
   --src deploy.zip
 ```
+> Note: Manual deploy is rarely needed — CI/CD handles this automatically on PR merge.
+
+## CI/CD — GitHub Actions
+
+### Branch Strategy
+```
+dev (daily work) → Pull Request → main (production) → GitHub Actions → Azure
+```
+- **`dev`**: Default branch for development. Push freely here.
+- **`main`**: Protected branch. Only updated via Pull Requests from `dev`.
+- **Trigger**: GitHub Actions workflow runs automatically when a PR is merged into `main`.
+
+### How It Works
+1. Developer pushes code to `dev` branch
+2. Creates Pull Request: `dev` → `main`
+3. Merge the PR → triggers GitHub Actions workflow
+4. Workflow builds .NET API + React SPA, deploys to Azure App Service
+5. Live at `https://efcore-northwind-app-mahi.azurewebsites.net`
+
+### Workflow File: `.github/workflows/deploy.yml`
+The workflow does the following on every push to `main`:
+1. **Checkout** code from repository
+2. **Setup Node.js 20** (for React build) with npm cache
+3. **Setup .NET 8 SDK** (for API build)
+4. **Publish** — runs `dotnet publish` which triggers the `PublishReactApp` MSBuild target in `.csproj` (auto-runs `npm install && npm run build`, copies React dist to `wwwroot/`)
+5. **Login to Azure** — uses service principal credentials stored in GitHub Secrets
+6. **Deploy** — pushes the publish output to Azure App Service
+
+### GitHub Secrets Required
+| Secret Name | Description | How to Get |
+|-------------|-------------|------------|
+| `AZURE_CREDENTIALS` | Azure service principal JSON | `az ad sp create-for-rbac --name "github-deploy" --role contributor --scopes /subscriptions/{sub-id}/resourceGroups/rg-efcore-app --sdk-auth` |
+
+### Authentication Method
+Uses **Azure Service Principal** (`azure/login@v2` action) instead of Publish Profile:
+- Service principal is scoped to the `rg-efcore-app` resource group only (least privilege)
+- Created via `az ad sp create-for-rbac` with `contributor` role
+- JSON credentials stored as `AZURE_CREDENTIALS` GitHub Secret (encrypted, never exposed in logs)
+- Public users cannot see secrets even on public repos
+
+### Cost
+- **Public repos**: Unlimited GitHub Actions minutes — $0
+- **Private repos**: 2,000 minutes/month free tier — $0 for this project
+
+### Daily Workflow
+```bash
+# 1. Work on dev branch
+git checkout dev
+# ... make changes ...
+git add . && git commit -m "your changes"
+git push origin dev
+
+# 2. Create PR on GitHub: dev → main
+# 3. Merge PR → auto-deploys to Azure (~2-3 min)
+# 4. Monitor: GitHub repo → Actions tab
+```
+
+### Troubleshooting CI/CD
+- **View logs**: GitHub repo → Actions tab → click failed run → expand failed step
+- **Re-run failed job**: Actions tab → click failed run → "Re-run all jobs"
+- **Update Azure credentials**: Re-run `az ad sp create-for-rbac` command, update `AZURE_CREDENTIALS` secret
 
 ### Free Tier Limits
 - **App Service F1**: 60 min CPU/day, 1GB RAM, 165 MiB data out/day, sleeps after ~20 min idle
