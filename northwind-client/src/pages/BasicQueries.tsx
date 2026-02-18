@@ -241,7 +241,7 @@ var products = await _context.Products
 
 const Copyright = () => (
   <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#888', fontSize: '0.85rem', borderTop: '1px solid #eee', marginTop: '2rem' }}>
-    &copy; 2026 Mahendran Rethinam. All rights reserved.
+    &copy; 2026 Feb, Mahendran Rethinam. All rights reserved.
   </div>
 )
 
